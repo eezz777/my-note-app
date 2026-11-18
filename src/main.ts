@@ -3,6 +3,7 @@ import './ui/app.css';
 import './render/md.css';
 import './editor/editor.css';
 import App from './ui/App.svelte';
+import { initPwa } from './ui/pwa';
 
 // 저장 공간을 브라우저가 임의로 비우지 않도록 영구 저장을 요청한다(설치된 PWA는 대개 허용됨)
 void navigator.storage?.persist?.();
@@ -21,4 +22,5 @@ try {
 }
 
 const app = mount(App, { target: document.getElementById('app')! });
+initPwa();
 export default app;

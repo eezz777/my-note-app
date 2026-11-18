@@ -1,7 +1,7 @@
 // 동기화 서비스: 언제 동기화할지 정하고(시작·포커스·온라인 복귀·60초마다·변경 3초 뒤·수동), 상태를 화면에 알린다.
 import { SyncEngine, KV, type ConflictInfo, type SyncProgress } from './engine';
 import { AuthError, OfflineError, type DriveLike } from '../drive/types';
-import { preloadGis } from '../drive/auth';
+import { preloadGis, prefersRedirect } from '../drive/auth';
 import type { AppStore } from '../ui/state.svelte';
 
 /** 로그인 기능(실제: GoogleAuth, 개발용 가짜도 같은 모양) */
@@ -11,6 +11,8 @@ export interface AuthLike {
   onChange: () => void;
   signIn(prompt?: '' | 'consent' | 'select_account'): Promise<void>;
   signOut(): Promise<void>;
+  /** 팝업이 안 되는 기기: 페이지 이동으로 로그인(있을 때만) */
+  signInRedirect?(): void;
 }
 
 export type SyncState = 'idle' | 'syncing' | 'pending' | 'offline' | 'error' | 'auth';
@@ -135,12 +137,25 @@ export class SyncService {
 
   /** "다시 로그인" 버튼(사용자 클릭 안에서 호출) */
   async relogin() {
+    if (prefersRedirect() && this.auth.signInRedirect) {
+      await this.loginByRedirect();
+      return;
+    }
     try {
       await this.auth.signIn('');
       await this.syncNow(true);
     } catch (e) {
-      this.app.toast(e instanceof Error ? e.message : String(e), 'error');
+      const msg = e instanceof Error ? e.message : String(e);
+      // 팝업이 막히거나 바로 닫히는 기기: 페이지 이동 방식을 권한다
+      if (this.auth.signInRedirect) this.app.toast(`${msg} 로그인 창이 안 뜨면 페이지 이동 방식으로 로그인하세요.`, 'error', { label: '페이지 이동으로 로그인', run: () => void this.loginByRedirect() }, 15000);
+      else this.app.toast(msg, 'error');
     }
+  }
+
+  /** 편집 중인 내용을 저장한 뒤 구글 로그인 화면으로 이동 */
+  async loginByRedirect() {
+    await this.app.editorFlush?.();
+    this.auth.signInRedirect?.();
   }
 
   private onConflict(c: ConflictInfo) {

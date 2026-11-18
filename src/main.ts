@@ -4,6 +4,7 @@ import './render/md.css';
 import './editor/editor.css';
 import App from './ui/App.svelte';
 import { initPwa } from './ui/pwa';
+import { consumeRedirect } from './drive/auth';
 
 // 저장 공간을 브라우저가 임의로 비우지 않도록 영구 저장을 요청한다(설치된 PWA는 대개 허용됨)
 void navigator.storage?.persist?.();
@@ -20,6 +21,9 @@ try {
 } catch {
   /* 저장된 값이 없거나 깨졌으면 기본값 */
 }
+
+// 구글 로그인 화면에서 토큰을 들고 돌아왔으면 먼저 받아 둔다(주소의 #를 라우터가 읽기 전에)
+consumeRedirect();
 
 const app = mount(App, { target: document.getElementById('app')! });
 initPwa();

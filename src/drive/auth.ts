@@ -57,6 +57,105 @@ interface Saved {
   hint?: string;
 }
 
+// ---------- 페이지 이동 방식 로그인 ----------
+// 일부 PC 브라우저(확장 프로그램·팝업 설정)에서는 로그인 팝업이 열리자마자 닫힌다.
+// 그럴 때는 이 페이지에서 구글 로그인 화면으로 이동했다가 토큰을 들고 돌아온다(OAuth 토큰 방식, 서버 불필요).
+// 돌아올 주소(리디렉션 URI)는 구글 콘솔의 "승인된 리디렉션 URI"에 등록해야 한다.
+
+const REDIRECT_KEY = 'mynotes.oauthRedirect';
+/** 한 번 페이지 이동 방식으로 로그인하면 이 기기에서는 계속 그 방식을 쓴다 */
+const PREFER_REDIRECT_KEY = 'mynotes.loginRedirect';
+
+export type RedirectIntent = 'connect' | 'relogin';
+export interface RedirectResult {
+  clientId: string;
+  intent: RedirectIntent;
+  error?: string;
+}
+
+/** 로그인 후 돌아올 주소(앱 첫 화면) */
+export function redirectUri(): string {
+  return location.origin + import.meta.env.BASE_URL;
+}
+
+export function prefersRedirect(): boolean {
+  return localStorage.getItem(PREFER_REDIRECT_KEY) === '1';
+}
+
+/** 구글 로그인 화면으로 이동(돌아오면 consumeRedirect가 처리) */
+export function signInRedirect(clientId: string, intent: RedirectIntent, prompt: '' | 'consent' | 'select_account' = '', hint?: string): void {
+  const state = crypto.randomUUID();
+  sessionStorage.setItem(REDIRECT_KEY, JSON.stringify({ state, clientId, intent, back: location.hash }));
+  localStorage.setItem(PREFER_REDIRECT_KEY, '1');
+  const p = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri(),
+    response_type: 'token',
+    scope: SCOPE,
+    include_granted_scopes: 'true',
+    state,
+  });
+  if (prompt) p.set('prompt', prompt);
+  if (hint) p.set('login_hint', hint);
+  location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${p}`);
+}
+
+let redirectResult: RedirectResult | null = null;
+
+/**
+ * 앱 시작 때(화면을 그리기 전에) 부른다. 주소 #에 구글이 붙여 준 토큰이 있으면 저장하고 주소를 원래대로 돌린다.
+ * state 값이 이 기기에서 보낸 요청과 같을 때만 받아들인다(위조된 링크 방지).
+ */
+export function consumeRedirect(): void {
+  const h = location.hash;
+  if (!/^#(.*&)?(access_token|error)=/.test(h)) return;
+  const p = new URLSearchParams(h.slice(1));
+  let req: { state: string; clientId: string; intent: RedirectIntent; back?: string } | null = null;
+  try {
+    req = JSON.parse(sessionStorage.getItem(REDIRECT_KEY) ?? 'null');
+  } catch {
+    req = null;
+  }
+  sessionStorage.removeItem(REDIRECT_KEY);
+  // 토큰이 주소에 남지 않게 바로 지운다
+  history.replaceState(null, '', location.pathname + location.search + (req?.back ?? ''));
+  if (!req || p.get('state') !== req.state) {
+    redirectResult = { clientId: req?.clientId ?? '', intent: req?.intent ?? 'connect', error: '로그인 응답을 확인할 수 없습니다. 다시 시도하세요.' };
+    return;
+  }
+  const err = p.get('error');
+  if (err) {
+    redirectResult = {
+      clientId: req.clientId,
+      intent: req.intent,
+      error: err === 'access_denied' ? '로그인이 취소되었거나 허용되지 않았습니다.' : `로그인하지 못했습니다(${err}).`,
+    };
+    return;
+  }
+  const token = p.get('access_token');
+  if (!token || !(p.get('scope') ?? SCOPE).includes(SCOPE)) {
+    redirectResult = { clientId: req.clientId, intent: req.intent, error: '드라이브 권한을 받지 못했습니다. "허용"을 눌러 주세요.' };
+    return;
+  }
+  const key = `mynotes.token.${req.clientId}`;
+  let prev: Saved | null = null;
+  try {
+    prev = JSON.parse(localStorage.getItem(key) ?? 'null');
+  } catch {
+    prev = null;
+  }
+  const saved: Saved = { token, exp: Date.now() + Number(p.get('expires_in') ?? 3600) * 1000, hint: prev?.hint };
+  localStorage.setItem(key, JSON.stringify(saved));
+  redirectResult = { clientId: req.clientId, intent: req.intent };
+}
+
+/** 페이지 이동 로그인 결과(한 번만 꺼낼 수 있음) */
+export function takeRedirectResult(): RedirectResult | null {
+  const r = redirectResult;
+  redirectResult = null;
+  return r;
+}
+
 export class GoogleAuth {
   private client: TokenClient | null = null;
   private pending: { resolve: () => void; reject: (e: Error) => void } | null = null;
@@ -112,6 +211,11 @@ export class GoogleAuth {
    * prompt: 처음엔 'consent', 다시 로그인할 땐 ''(이미 허용했으면 바로 닫힘)
    */
   async signIn(prompt: '' | 'consent' | 'select_account' = ''): Promise<void> {
+    if (prefersRedirect()) {
+      // 이 기기는 팝업이 안 되므로 바로 페이지 이동(돌아오면 앱이 새로 시작됨)
+      this.signInRedirect('relogin', prompt);
+      return new Promise<void>(() => {});
+    }
     await loadGis();
     const oauth2 = window.google!.accounts!.oauth2!;
     this.client ??= oauth2.initTokenClient({
@@ -146,6 +250,11 @@ export class GoogleAuth {
       this.pending = { resolve, reject };
       this.client!.requestAccessToken({ prompt, login_hint: this.saved?.hint });
     });
+  }
+
+  /** 팝업 대신 페이지 이동으로 로그인 */
+  signInRedirect(intent: RedirectIntent = 'relogin', prompt: '' | 'consent' | 'select_account' = '') {
+    signInRedirect(this.clientId, intent, prompt, this.saved?.hint);
   }
 
   /** 로그아웃: 토큰을 취소하고 지운다 */

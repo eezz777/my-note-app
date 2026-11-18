@@ -6,7 +6,7 @@
   import { Repo } from '../store/repo';
   import { seedDemo } from '../demo/seed';
   import { seedDemoAssets } from '../demo/assets';
-  import { GoogleAuth, configuredClientId, isValidClientId, preloadGis } from '../drive/auth';
+  import { GoogleAuth, configuredClientId, isValidClientId, preloadGis, prefersRedirect, signInRedirect, takeRedirectResult } from '../drive/auth';
   import { DriveApi } from '../drive/api';
   import { SyncService } from '../sync/service.svelte';
 
@@ -102,26 +102,67 @@
   }
 
   /** "연결" 버튼: 로그인 창은 반드시 클릭 직후에 열려야 하므로 이 함수는 클릭에서 바로 부른다 */
-  async function connect() {
+  function checkedClientId(): string | null {
     const cid = clientId.trim();
     if (!isValidClientId(cid)) {
       connectError = '클라이언트 ID 형식이 아닙니다. "숫자-문자.apps.googleusercontent.com" 형태여야 합니다.';
-      return;
+      return null;
     }
     localStorage.setItem('mynotes.clientId', cid);
+    return cid;
+  }
+
+  async function connect() {
+    const cid = checkedClientId();
+    if (!cid) return;
+    if (prefersRedirect()) {
+      connectByRedirect();
+      return;
+    }
     connecting = true;
     connectError = '';
+    popupFailed = false;
     try {
       const auth = new GoogleAuth(cid);
       await auth.signIn('consent');
-      const me = await new DriveApi(() => auth.getToken()).about();
-      auth.setHint(me.emailAddress);
-      await startDrive(me.permissionId, cid);
-      showConnect = false;
+      await finishConnect(auth, cid);
     } catch (e) {
       connectError = e instanceof Error ? e.message : String(e);
+      popupFailed = true;
     } finally {
       connecting = false;
+    }
+  }
+
+  /** 로그인 창(팝업)이 안 뜨는 기기: 구글 로그인 화면으로 이동했다가 돌아온다 */
+  function connectByRedirect() {
+    const cid = checkedClientId();
+    if (!cid) return;
+    connecting = true;
+    signInRedirect(cid, 'connect', 'consent');
+  }
+
+  /** 로그인 뒤: 계정 확인 → 드라이브 모드 시작 */
+  async function finishConnect(auth: GoogleAuth, cid: string) {
+    const me = await new DriveApi(() => auth.getToken()).about();
+    auth.setHint(me.emailAddress);
+    await startDrive(me.permissionId, cid);
+    showConnect = false;
+  }
+
+  let popupFailed = $state(false);
+
+  // 구글 로그인 화면에서 돌아온 경우
+  const redirected = takeRedirectResult();
+  if (redirected?.intent === 'connect') {
+    showConnect = true;
+    if (redirected.clientId) clientId = redirected.clientId;
+    if (redirected.error) connectError = redirected.error;
+    else {
+      connecting = true;
+      void finishConnect(new GoogleAuth(redirected.clientId), redirected.clientId)
+        .catch((e) => (connectError = e instanceof Error ? e.message : String(e)))
+        .finally(() => (connecting = false));
     }
   }
 
@@ -202,8 +243,13 @@
         </label>
         {#if connectError}<p class="err">{connectError}</p>{/if}
         <button class="btn primary big" disabled={connecting} onclick={connect}>
-          {connecting ? '로그인 창에서 계속하세요…' : '구글 계정으로 로그인'}
+          {connecting ? (redirected ? '드라이브 연결 확인 중…' : '로그인 창에서 계속하세요…') : '구글 계정으로 로그인'}
         </button>
+        {#if !prefersRedirect()}
+          <button class="link" class:strong={popupFailed} disabled={connecting} onclick={connectByRedirect}>
+            로그인 창이 안 뜨나요? 페이지 이동으로 로그인
+          </button>
+        {/if}
         <button class="btn big outline" onclick={() => (showConnect = false)}>뒤로</button>
         <p class="note">권한은 "이 앱이 만든 파일만 보기·수정"(drive.file) 하나만 요청합니다. 다른 드라이브 파일에는 접근하지 않습니다.</p>
       {:else}
@@ -262,6 +308,16 @@
   }
   .outline {
     border: 1.5px solid var(--border);
+  }
+  .link {
+    font-size: 13px;
+    color: var(--text-3);
+    text-decoration: underline;
+    padding: 4px 8px;
+  }
+  .link.strong {
+    color: var(--accent-strong);
+    font-weight: 600;
   }
   .btn:disabled {
     opacity: 0.6;

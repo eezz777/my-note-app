@@ -1,6 +1,7 @@
 <script lang="ts">
   // 화면 위쪽 안내: 로그인 만료(편집 내용은 안전) / 첫 동기화 진행률
   import { useApp } from './context';
+  import { prefersRedirect } from '../drive/auth';
 
   const app = useApp();
   const s = $derived(app.sync);
@@ -15,7 +16,12 @@
 {#if s?.state === 'auth'}
   <div class="banner warn" role="alert">
     <span>구글 로그인이 만료되었습니다. 편집한 내용은 이 기기에 안전하게 저장되어 있고, 다시 로그인하면 이어서 동기화합니다.</span>
-    <button class="btn primary" onclick={() => s.relogin()}>다시 로그인</button>
+    <div class="actions">
+      <button class="btn primary" onclick={() => s.relogin()}>다시 로그인</button>
+      {#if s.auth.signInRedirect && !prefersRedirect()}
+        <button class="link" onclick={() => s.loginByRedirect()}>로그인 창이 안 뜨나요?</button>
+      {/if}
+    </div>
   </div>
 {:else if showInitial}
   <div class="banner" role="status">
@@ -49,8 +55,18 @@
   .banner.warn {
     border: 1.5px solid var(--danger);
   }
-  .banner .btn {
+  .actions {
     flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .link {
+    font-size: 12px;
+    color: var(--text-3);
+    text-decoration: underline;
+    padding: 4px;
   }
   .info {
     flex: 1;

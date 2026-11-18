@@ -1,0 +1,101 @@
+/* 편집기(CodeMirror) 라이브 프리뷰 스타일 */
+.cm-editor .cm-h { font-weight: 700; line-height: 1.4; letter-spacing: -0.01em; }
+.cm-editor .cm-h1 { font-size: 1.75em; padding-top: 0.5em !important; }
+.cm-editor .cm-h2 { font-size: 1.45em; padding-top: 0.4em !important; }
+.cm-editor .cm-h3 { font-size: 1.22em; padding-top: 0.3em !important; }
+.cm-editor .cm-h4 { font-size: 1.08em; }
+.cm-editor .cm-h5,
+.cm-editor .cm-h6 { font-size: 1em; color: var(--text-2); }
+.cm-editor .cm-h .tok-heading,
+.cm-editor .cm-h span { text-decoration: none; }
+
+.cm-editor .cm-highlight { background: color-mix(in srgb, #f5d142 55%, transparent); border-radius: 3px; }
+.cm-editor .cm-inline-code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--surface-2);
+  border-radius: 5px;
+  padding: 0.1em 0.2em;
+}
+.cm-editor .cm-link-rendered,
+.cm-editor .cm-url {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+}
+.cm-editor .cm-url { cursor: text; }
+.cm-editor .cm-wikilink { color: var(--accent-strong); cursor: pointer; }
+.cm-editor .cm-wikilink.cm-unresolved { color: var(--text-3); text-decoration: underline dashed; text-underline-offset: 3px; }
+.cm-editor .cm-embed { background: var(--surface-2); border-radius: 6px; padding: 0 4px; }
+.cm-editor .cm-hashtag,
+.md-body a.tag {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 0.05em 0.5em;
+  text-decoration: none;
+  font-size: 0.92em;
+}
+.cm-editor .cm-hashtag[data-tag],
+.md-body a.tag {
+  cursor: pointer;
+}
+.cm-editor .cm-flash {
+  animation: cm-flash 1.6s ease-out;
+}
+@keyframes cm-flash {
+  0% {
+    background: var(--accent-soft);
+  }
+  100% {
+    background: transparent;
+  }
+}
+.cm-editor .cm-blockid { color: var(--text-3); font-size: 0.85em; }
+.cm-editor .cm-footref { color: var(--accent-strong); font-size: 0.85em; vertical-align: super; }
+.cm-editor .cm-math-src { font-family: var(--mono); font-size: 0.9em; color: var(--text-2); }
+.cm-editor .cm-math-block { text-align: center; padding: 6px 0; overflow-x: auto; cursor: text; }
+.cm-editor .cm-math-inline { cursor: text; }
+
+.cm-editor .cm-bullet { color: var(--accent); font-weight: 700; padding: 0 0.15em; }
+.cm-editor .cm-task-done { color: var(--text-3); }
+.cm-editor .cm-task-done .cm-task-box + * { text-decoration: none; }
+.cm-editor .cm-hr { display: inline-block; width: 100%; height: 1px; vertical-align: middle; background: var(--border); }
+
+.cm-editor .cm-quote { border-left: 3px solid var(--border); padding-left: 14px !important; color: var(--text-2); }
+.cm-editor .cm-callout {
+  --c: #3f7fd1;
+  background: color-mix(in srgb, var(--c) 9%, transparent);
+  padding: 0 14px !important;
+}
+.cm-editor .cm-callout-title { border-radius: 12px 12px 0 0; padding-top: 8px !important; font-weight: 700; color: var(--c); }
+.cm-editor .cm-callout-end { border-radius: 0 0 12px 12px; padding-bottom: 8px !important; }
+.cm-editor .cm-callout-title.cm-callout-end { border-radius: 12px; }
+.cm-editor .cm-callout-label { font-weight: 700; color: var(--c); }
+
+.cm-editor .cm-codeblock {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--surface-2);
+  padding: 0 14px !important;
+  line-height: 1.6;
+}
+.cm-editor .cm-codeblock-begin { border-radius: 10px 10px 0 0; padding-top: 6px !important; }
+.cm-editor .cm-codeblock-end { border-radius: 0 0 10px 10px; padding-bottom: 6px !important; }
+.cm-editor .cm-codeblock-begin.cm-codeblock-end { border-radius: 10px; }
+
+.cm-editor .cm-block-widget { cursor: text; padding: 2px 0; }
+
+.cm-editor .cm-frontmatter {
+  font-family: var(--mono);
+  font-size: 0.82em;
+  color: var(--text-2);
+  background: var(--surface-2);
+  padding: 0 12px !important;
+}
+.cm-editor .cm-frontmatter * { color: inherit !important; text-decoration: none !important; }
+.cm-editor .cm-frontmatter-begin { border-radius: 10px 10px 0 0; padding-top: 4px !important; }
+.cm-editor .cm-frontmatter-end { border-radius: 0 0 10px 10px; padding-bottom: 4px !important; margin-bottom: 8px; }
+.cm-editor .cm-block-widget table { margin: 0.3em 0; }

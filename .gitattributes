@@ -1,0 +1,5 @@
+# 줄바꿈을 LF로 통일(윈도우·리눅스 빌드 결과를 같게)
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.woff2 binary

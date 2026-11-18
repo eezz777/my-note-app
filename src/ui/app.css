@@ -1,0 +1,157 @@
+/* 전체 테마. 차분한 녹색 포인트, 넉넉한 여백, 둥근 모서리, 부드러운 그림자. */
+:root {
+  --accent: #2e9e6b;
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-strong: color-mix(in srgb, var(--accent) 85%, black);
+  --on-accent: #fff;
+
+  --bg: #f4f5f3;
+  --surface: #ffffff;
+  --surface-2: #f8f9f7;
+  --sidebar: #eef0ec;
+  --border: #e3e6e1;
+  --text: #1f2421;
+  --text-2: #5d655f;
+  --text-3: #8c948e;
+  --danger: #d6453d;
+  --hover: rgba(0, 0, 0, 0.045);
+  --shadow-1: 0 1px 2px rgba(20, 30, 25, 0.06), 0 2px 8px rgba(20, 30, 25, 0.05);
+  --shadow-2: 0 6px 24px rgba(20, 30, 25, 0.14), 0 2px 6px rgba(20, 30, 25, 0.08);
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --font-size: 16px;
+  --touch: 44px;
+  --font: system-ui, -apple-system, 'Segoe UI', 'Noto Sans KR', 'Malgun Gothic', Roboto, sans-serif;
+  --mono: ui-monospace, 'Cascadia Code', Consolas, 'D2Coding', monospace;
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #141716;
+  --surface: #1d211f;
+  --surface-2: #232825;
+  --sidebar: #181b1a;
+  --border: #2c322e;
+  --text: #e6ebe7;
+  --text-2: #a7b0aa;
+  --text-3: #75807a;
+  --hover: rgba(255, 255, 255, 0.06);
+  --accent-soft: color-mix(in srgb, var(--accent) 22%, transparent);
+  --accent-strong: color-mix(in srgb, var(--accent) 80%, white);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 8px 28px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+#app {
+  height: 100%;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 아이콘 버튼: 터치 최소 44px */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch);
+  min-height: var(--touch);
+  border-radius: 50%;
+  color: var(--text-2);
+  transition: background 0.15s;
+}
+.icon-btn:hover {
+  background: var(--hover);
+}
+.icon-btn.active {
+  color: var(--accent);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.btn:hover {
+  background: var(--hover);
+}
+.btn.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.btn.primary:hover {
+  background: var(--accent-strong);
+}
+.btn.danger {
+  color: var(--danger);
+}
+.btn.danger.primary {
+  background: var(--danger);
+  color: #fff;
+}
+
+.text-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  outline: none;
+}
+.text-input:focus {
+  border-color: var(--accent);
+}
+
+.muted {
+  color: var(--text-3);
+}
+
+/* 스크롤바를 얇게 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-3) 50%, transparent) transparent;
+}
